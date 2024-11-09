@@ -1,15 +1,39 @@
 #include "Node.h"
 #include <utility>
 #include <iostream>
+#include <queue>
+
+ValueNode::ValueNode(char symbol, int num_symbol) : symbol(symbol), num_symbol(num_symbol) {}
+ValueNode::ValueNode(char symbol) : symbol(symbol), num_symbol(0) {}
+ValueNode::ValueNode() : symbol(0), num_symbol(0) {}
+
+bool ValueNode::operator==(char symbol) const { return this->symbol == symbol; }
+bool ValueNode::operator<(char symbol) const { return this->symbol < symbol; }
+bool ValueNode::operator==(const ValueNode& other) const { return this->symbol == other.symbol && this->num_symbol == other.num_symbol; }
+bool ValueNode::operator<(const ValueNode& other) const { return this->symbol < other.symbol; }
+
+bool ValueNode::equal(const ValueNode& other) const { return symbol == other.symbol && num_symbol == other.num_symbol; }
+
+std::ostream& operator<<(std::ostream& out, const ValueNode& node) {
+    out << node.symbol;
+    if (node.num_symbol)
+        out << node.num_symbol;
+    return out;
+}
+
+Node::Node(ValueNode value, Node* left, Node* right)
+    : value(value), left(left), right(right) {}
 
 Node::Node(char value, Node* left, Node* right)
     : value(value), left(left), right(right) {}
 
-Node::Node(const Node& other) : value(other.value), left(nullptr), right(nullptr) {
+Node::Node(const Node& other, int num_symbol) : value(other.value), left(nullptr), right(nullptr) {
     if (other.left)
-        left = new Node(*other.left);
+        left = new Node(*other.left, num_symbol);
     if (other.right)
-        right = new Node(*other.right);
+        right = new Node(*other.right, num_symbol);
+    if (other.left == nullptr && other.right == nullptr && value.num_symbol == 0)
+        value.num_symbol = num_symbol;
 }
 
 Node::Node(Node&& other) noexcept : value(other.value), left(nullptr), right(nullptr) {
@@ -82,22 +106,6 @@ bool Node::operator==(const Node& other) const {
     delete other_ptr;
 
     return stack_this.empty() && stack_other.empty();
-}
-
-std::string Node::to_string() const {
-    std::stack<const Node*> stack;
-    stack.push(this);
-    std::string output;
-    
-    while (!stack.empty()) {
-        const Node* node = stack.top();
-        stack.pop();
-        output += node->value;
-
-        if (node->right) stack.push(node->right);
-        if (node->left) stack.push(node->left);
-    }
-    return output;
 }
 
 bool Node::operator<(const Node& other) const {

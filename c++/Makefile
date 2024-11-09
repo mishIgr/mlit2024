@@ -21,4 +21,4 @@ $(BUILD_DIR)/%.o: $(LIB_DIR)/%.cpp $(LIB_DIR)/%.h
 	$(CXX) -c $< -o $@
 
 clean:
-	rm -rf $(BUILD_DIR)
+	rm -rf $(BUILD_DIR)/*
