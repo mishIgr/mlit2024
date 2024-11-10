@@ -34,11 +34,8 @@ void FindFormul::find_formul(const Node& formula) {
         data.push_back(new Node(*axiom));
 
     while (!flag_find && data.size() < 1e10) {
+        if (data.size() == size_data) break;
         size_data = data.size();
-        // if (size_data == 354) {
-        //     std::cout << data;
-        //     break;
-        // }
         for (int i = 0; i < size_data; ++i) {
             for (int j = 0; j < size_data; ++j) {
                 for (Rule* rule : rules) {
@@ -57,6 +54,6 @@ void FindFormul::find_formul(const Node& formula) {
                 }
             }
         }
-        // std::cout << "Размер данных " << data.size() << '\n';
+        std::cout << "Размер данных " << data.size() << '\n';
     }
 }

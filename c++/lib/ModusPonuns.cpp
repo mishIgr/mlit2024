@@ -1,17 +1,6 @@
 #include "ModusPonuns.h"
 #include <iostream>
-
-bool unification(Node& first, Node& left, Node& right) {
-    if (first.value != left.value && first.value.num_symbol == 0 && left.value.num_symbol == 0)
-        return false;
-
-    if (first.value.num_symbol == 0 && left.value.num_symbol != 0) {
-        Formula::replace_chars(right, {Unifier(left, first)});
-        Formula::to_zerros_num_value(right);
-        return true;
-    }
-    return false;
-}
+#include <string>
 
 bool ModusPonuns::is_approp(const std::pair<const Node&, int>& first_formula, const std::pair<const Node&, int>& second_formula, Node& new_formula) const {
     if (second_formula.first.value != '>')
@@ -19,9 +8,22 @@ bool ModusPonuns::is_approp(const std::pair<const Node&, int>& first_formula, co
     
     Node first(first_formula.first, first_formula.second);
     Node left(*second_formula.first.left, second_formula.second);
-    new_formula = Node(*second_formula.first.right, second_formula.second);
 
-    return unification(first, left, new_formula);
+    try {
+        auto unifer = Formula::unification(first, left);
+        if (unifer.size() == 0)
+            return 0;
+        new_formula = Node(*second_formula.first.right, second_formula.second);
+        Formula::replace_chars(new_formula, unifer);
+        auto un = Formula::to_zerros_num_value(new_formula);
+        unifer.insert(unifer.end(), un.begin(), un.end());
+
+        return true;
+    } catch (ErrorCreateUnifier) {
+        return false;
+    } catch (const std::exception& e) {
+        throw ;
+    }
 }
 
 std::string ModusPonuns::get_name() const { return "mp"; }

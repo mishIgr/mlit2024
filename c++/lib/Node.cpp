@@ -68,17 +68,14 @@ Node::~Node() {
 }
 
 bool Node::operator==(const Node& other) const {
-    std::stack<Node*> stack_this;
-    std::stack<Node*> stack_other;
-    Node* this_ptr = new Node(value, left, right);
-    Node* other_ptr = new Node(other.value, other.left, other.right);
-
-    stack_this.push(this_ptr);
-    stack_other.push(other_ptr);
+    std::stack<const Node*> stack_this;
+    std::stack<const Node*> stack_other;
+    stack_this.push(this);
+    stack_other.push(&other);
 
     while (!stack_this.empty() && !stack_other.empty()) {
-        Node* this_node = stack_this.top();
-        Node* other_node = stack_other.top();
+        const Node* this_node = stack_this.top();
+        const Node* other_node = stack_other.top();
         stack_this.pop();
         stack_other.pop();
 
@@ -97,13 +94,6 @@ bool Node::operator==(const Node& other) const {
         } else if (this_node->right || other_node->right)
             return false; 
     }
-
-    this_ptr->left = nullptr;
-    this_ptr->right = nullptr;
-    delete this_ptr;
-    other_ptr->left = nullptr;
-    other_ptr->right = nullptr;
-    delete other_ptr;
 
     return stack_this.empty() && stack_other.empty();
 }

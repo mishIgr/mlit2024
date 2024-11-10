@@ -1,22 +1,12 @@
 #include "Formula.h"
 #include <stdexcept>
 #include <algorithm>
+#include <unordered_map>
+#include <stack>
+#include <queue>
 
 const char* ErrorReadFormula::what() const noexcept {
     return "Ошибка в чтении формулы";
-}
-
-Unifier::Unifier() {}
-Unifier::Unifier(const Node& into, const Node& what) : into(into), what(what) {}
-
-bool Unifier::equal_into(const Node& into) const { return this->into == into; }
-bool Unifier::equal_what(const Node& what) const { return this->what == what; }
-Node Unifier::get_into() const { return Node(into); }
-Node Unifier::get_what() const { return Node(what); }
-
-std::ostream& operator<<(std::ostream& out, const Unifier& other) {
-    out << '{' << other.what << " | " << other.into << '}';
-    return out;
 }
 
 // Приоритет операции
@@ -130,7 +120,7 @@ std::vector<Unifier> Formula::replace_chars(Node& formula, const ValueNode& repl
     return data;
 }
 
-void Formula::replace_chars(Node& formula, const std::vector<Unifier>& data) {
+std::vector<Unifier> Formula::replace_chars(Node& formula, const std::vector<Unifier>& data) {
     std::queue<Node*> q;
     q.push(&formula);
 
@@ -151,6 +141,7 @@ void Formula::replace_chars(Node& formula, const std::vector<Unifier>& data) {
         if (node->left) q.push(node->left);
         if (node->right) q.push(node->right);
     }
+    return data;
 }
 
 std::vector<Unifier> Formula::to_zerros_num_value(Node& formula) {
@@ -176,6 +167,67 @@ std::vector<Unifier> Formula::to_zerros_num_value(Node& formula) {
 
         if (node->left) q.push(node->left);
         if (node->right) q.push(node->right);
+    }
+    return data;
+}
+
+std::pair<Node*, Node*> Formula::get_first_mismatched_pair(Node& first_formula, Node& second_formula) {
+    std::queue<Node*> first;
+    first.push(&first_formula);
+    std::queue<Node*> second;
+    second.push(&second_formula);
+    auto is_end_node = [](Node* node){ return node->value.num_symbol != 0 && !node->left && !node->right; };
+
+    while (!first.empty() && !second.empty()) {
+        auto node_first = first.front();
+        first.pop();
+        auto node_second = second.front();
+        second.pop();
+
+        if (node_first->value != node_second->value)
+            return {node_first, node_second};
+
+        if (node_first->left) first.push(node_first->left);
+        if (node_first->right) first.push(node_first->right);
+        if (node_second->left) second.push(node_second->left);
+        if (node_second->right) second.push(node_second->right);
+
+    }
+
+    return {nullptr, nullptr};
+}
+
+std::vector<Unifier> Formula::unification(Node& first, Node& left) {
+    std::vector<Unifier> data;
+    Node *first_formula, *left_formula;
+    std::tie(first_formula, left_formula) = Formula::get_first_mismatched_pair(first, left);
+
+    while (first_formula && left_formula) {
+        if (!left_formula->left && !left_formula->right) {
+            auto un = Formula::to_zerros_num_value(*first_formula);
+
+            if (un.size() == 0)
+                return {};
+
+            data.insert(data.end(), un.begin(), un.end());
+            Formula::replace_chars(first, un);
+            un = Formula::replace_chars(left, { Unifier(*left_formula, *first_formula) });
+            data.insert(data.end(), un.begin(), un.end());
+        }
+        else if (!first_formula->left && !first_formula->right) {
+            auto un = Formula::to_zerros_num_value(*left_formula);
+
+            if (un.size() == 0)
+                return {};
+
+            data.insert(data.end(), un.begin(), un.end());
+            Formula::replace_chars(left, un);
+            un = Formula::replace_chars(first, { Unifier(*first_formula, *left_formula) });
+            data.insert(data.end(), un.begin(), un.end());
+        }
+        else return {};
+
+        std::tie(first_formula, left_formula) = Formula::get_first_mismatched_pair(first, left);
     }
     return data;
 }
