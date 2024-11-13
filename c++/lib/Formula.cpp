@@ -172,16 +172,16 @@ std::vector<Unifier> Formula::to_zerros_num_value(Node& formula) {
 }
 
 std::pair<Node*, Node*> Formula::get_first_mismatched_pair(Node& first_formula, Node& second_formula) {
-    std::queue<Node*> first;
+    std::stack<Node*> first;
     first.push(&first_formula);
-    std::queue<Node*> second;
+    std::stack<Node*> second;
     second.push(&second_formula);
     auto is_end_node = [](Node* node){ return node->value.num_symbol != 0 && !node->left && !node->right; };
 
     while (!first.empty() && !second.empty()) {
-        auto node_first = first.front();
+        auto node_first = first.top();
         first.pop();
-        auto node_second = second.front();
+        auto node_second = second.top();
         second.pop();
 
         if (node_first->value != node_second->value)
