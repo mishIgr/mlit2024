@@ -68,24 +68,30 @@ void ReplaceParam::to_zerros_num_value(Node* formula, std::map<ValueNode, ValueN
 
 // Меняет все переменные, которые имеют значение num_symbol != 0, данные берутся из unif_data.
 void ReplaceParam::change_form_to_var(Node* formula, const std::vector<Unifier>& unif_data) {
-    std::queue<Node*> q;
-    q.push(formula);
+    bool flag_end_change = false;
+    while (!flag_end_change) {
+        flag_end_change = true;
+        std::queue<Node*> q;
+        q.push(formula);
 
-    while (!q.empty()) {
-        Node* node = q.front();
-        q.pop();
+        while (!q.empty()) {
+            Node* node = q.front();
+            q.pop();
 
-        if (node->value.num_symbol != 0) {
-            auto it = std::find_if(unif_data.begin(), unif_data.end(), [node](const Unifier& unif){
-                return unif.get_value_into() == node->value;
-            });
-            if (it != unif_data.end())
-                *node = it->get_what();
-            continue;
+            if (node->value.num_symbol != 0 || node->value.num_symbol == 0 && !node->left && !node->right) {
+                auto it = std::find_if(unif_data.begin(), unif_data.end(), [node](const Unifier& unif){
+                    return unif.get_value_into() == node->value;
+                });
+                if (it != unif_data.end()) {
+                    *node = it->get_what();
+                    flag_end_change = false;
+                }
+                continue;
+            }
+
+            if (node->left) q.push(node->left);
+            if (node->right) q.push(node->right);
         }
-
-        if (node->left) q.push(node->left);
-        if (node->right) q.push(node->right);
     }
 }
 
@@ -216,7 +222,7 @@ bool Formula::unification(std::pair<const Node&, int> first_formula, std::pair<c
         auto second_node = second.top();
         second.pop();
 
-        // std::cout << "Первая формула: " << *first_node << "\tВторая формула: " << *second_node << std::endl;
+        // std::cout << "Первая формула: " << unif_first_formula << "\tВторая формула: " << unif_second_formula << std::endl;
 
         if (first_node->value == second_node->value) {
             if (first_node->right) first.push(first_node->right);
@@ -238,7 +244,7 @@ bool Formula::unification(std::pair<const Node&, int> first_formula, std::pair<c
             replace_param.change_form_to_var(value_formula, unif_data);
         }
 
-        else if (first_node->value != '!' && !first_node->left->left && !first_node->left->right) {
+        else if (first_node->value == '!' && !first_node->left->left && !first_node->left->right) {
             replace_param.to_zerros_num_value(second_node, replace_data, unif_data);
             replace_param.change_form_to_var(&unif_second_formula, unif_data);
 
@@ -246,7 +252,7 @@ bool Formula::unification(std::pair<const Node&, int> first_formula, std::pair<c
             replace_param.change_form_to_var(&unif_first_formula, unif_data);
         }
 
-        else if (second_node->value != '!' && !second_node->left->left && !second_node->left->right) {
+        else if (second_node->value == '!' && !second_node->left->left && !second_node->left->right) {
             replace_param.to_zerros_num_value(first_node, replace_data, unif_data);
             replace_param.change_form_to_var(&unif_first_formula, unif_data);
 
@@ -256,7 +262,7 @@ bool Formula::unification(std::pair<const Node&, int> first_formula, std::pair<c
 
         else return false;
 
-        // std::cout << "Первая формула: " << *first_node << "\tВторая формула: " << *second_node << std::endl << std::endl;
+        // std::cout << "Первая формула: " << unif_first_formula << "\tВторая формула: " << unif_second_formula << std::endl << std::endl;
     }
 
     return first.empty() && second.empty();

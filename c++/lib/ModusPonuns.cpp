@@ -16,6 +16,7 @@ bool ModusPonuns::is_approp(const std::pair<const Node&, int>& first_formula, co
         std::map<ValueNode, ValueNode> replace_data;
         new_formula = Node(*second_formula.first.right, second_formula.second);
         rp.change_form_to_var(&new_formula, unif_data);
+        rp.del_repet_denial(&new_formula);
 
         // for (auto& u : unif_data)
         //     std::cout << u << ' ';
