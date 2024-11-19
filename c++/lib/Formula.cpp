@@ -9,6 +9,105 @@ const char* ErrorReadFormula::what() const noexcept {
     return "Ошибка в чтении формулы";
 }
 
+// Выдаёт элемент по ключу, если ключа нет, то добавляет новую запись (key, next_value), и перемещает next_value на следующий символ
+ValueNode ReplaceParam::get_or_default(std::map<ValueNode, ValueNode>& data, const ValueNode& key) {
+    auto it = data.find(key);
+    if (it != data.end())
+        return it->second;
+
+    data[key] = next_value;
+    return next_value++;
+}
+
+// Статический метод для определения следующего символа, который ещё не используется в формуле
+char ReplaceParam::find_next_value(Node* formula) {
+    char find_char = FIRST_VALUE;
+    std::queue<Node*> q;
+    q.push(formula);
+
+    while (!q.empty()) {
+        Node* node = q.front();
+        q.pop();
+
+        if (node->value.num_symbol == 0 && !node->left && !node->right) find_char = std::max(find_char, node->value.symbol);
+
+        if (node->left) q.push(node->left);
+        if (node->right) q.push(node->right);
+    }
+
+    return ++find_char;
+}
+
+ReplaceParam::ReplaceParam(char next_value) : next_value(next_value) {}
+
+// Зануляет все переменные, которые имеют значение num_symbol != 0. Замены добавляет в replace_data, unif_data
+void ReplaceParam::to_zerros_num_value(Node* formula, std::map<ValueNode, ValueNode>& replace_data, std::vector<Unifier>& unif_data) {
+    std::queue<Node*> q;
+    q.push(formula);
+
+    while (!q.empty()) {
+        Node* node = q.front();
+        q.pop();
+
+        if (node->value.num_symbol != 0) {
+            auto new_value_node = get_or_default(replace_data, node->value);
+
+            auto it = std::find_if(unif_data.begin(), unif_data.end(), [node, new_value_node](const Unifier& unif){
+                return unif.get_value_into() == node->value && unif.get_value_what() == new_value_node;
+            });
+            if (it == unif_data.end())
+                unif_data.push_back(Unifier(*node, Node(new_value_node)));
+            
+            node->value = new_value_node;
+        }
+
+        if (node->left) q.push(node->left);
+        if (node->right) q.push(node->right);
+    }
+}
+
+// Меняет все переменные, которые имеют значение num_symbol != 0, данные берутся из unif_data.
+void ReplaceParam::change_form_to_var(Node* formula, const std::vector<Unifier>& unif_data) {
+    std::queue<Node*> q;
+    q.push(formula);
+
+    while (!q.empty()) {
+        Node* node = q.front();
+        q.pop();
+
+        if (node->value.num_symbol != 0) {
+            auto it = std::find_if(unif_data.begin(), unif_data.end(), [node](const Unifier& unif){
+                return unif.get_value_into() == node->value;
+            });
+            if (it != unif_data.end())
+                *node = it->get_what();
+            continue;
+        }
+
+        if (node->left) q.push(node->left);
+        if (node->right) q.push(node->right);
+    }
+}
+
+// Удаляет два подряд идущих отрицаний
+void ReplaceParam::del_repet_denial(Node* formula) {
+    std::queue<Node*> q;
+    q.push(formula);
+
+    while (!q.empty()) {
+        Node* node = q.front();
+        q.pop();
+
+        if (node->value == '!' && node->left->value == '!') {
+            Node* tmp = node->left->left;
+            *node = *tmp;
+        }
+
+        if (node->left) q.push(node->left);
+        if (node->right) q.push(node->right);
+    }
+}
+
 // Приоритет операции
 std::unordered_map<char, int> precedence = {
     {'!', 5},  // Отрицание
@@ -19,6 +118,7 @@ std::unordered_map<char, int> precedence = {
     {'=', 1}   // Эквиваленция
 };
 
+// Функция парсит строку и переводит её в Node
 Node Formula::to_expression_tree(const std::string& expression) {
     std::stack<Node*> stack;
     std::stack<char> operator_stack;
@@ -95,139 +195,69 @@ Node Formula::to_expression_tree(const std::string& expression) {
     return *stack.top();
 }
 
-std::vector<Unifier> Formula::replace_chars(Node& formula, const ValueNode& repl_value, const Node& replace_formula) {
-    std::vector<Unifier> data;
-    std::queue<Node*> q;
-    q.push(&formula);
+// Функця проверяет, можно ли унифицировать два высказывания
+bool Formula::unification(std::pair<const Node&, int> first_formula, std::pair<const Node&, int> second_formula, std::vector<Unifier>& unif_data) {
+    std::map<ValueNode, ValueNode> replace_data;
 
-    while (!q.empty()) {
-        Node* node = q.front();
-        q.pop();
+    ReplaceParam replace_param;
+    
+    Node unif_first_formula(first_formula.first, first_formula.second);
+    Node unif_second_formula(second_formula.first, second_formula.second);
 
-        if (node->value == repl_value) {
-            auto it = std::find_if(data.begin(), data.end(), [node](const Unifier& unifier) {
-                return unifier.equal_into(*node); 
-            });
-            if (it == data.end())
-                data.push_back(Unifier(*node, replace_formula));
-            *node = replace_formula;
-            continue;
-        }
-
-        if (node->left) q.push(node->left);
-        if (node->right) q.push(node->right);
-    }
-    return data;
-}
-
-std::vector<Unifier> Formula::replace_chars(Node& formula, const std::vector<Unifier>& data) {
-    std::queue<Node*> q;
-    q.push(&formula);
-
-    while (!q.empty()) {
-        Node* node = q.front();
-        q.pop();
-
-        if (node->value.num_symbol != 0) {
-            auto it = std::find_if(data.begin(), data.end(), [node](const Unifier& unifier) {
-                return unifier.equal_into(*node); 
-            });
-            if (it != data.end()) {
-                *node = it->get_what();
-                continue;
-            }
-        }
-
-        if (node->left) q.push(node->left);
-        if (node->right) q.push(node->right);
-    }
-    return data;
-}
-
-std::vector<Unifier> Formula::to_zerros_num_value(Node& formula) {
-    std::vector<Unifier> data;
-    std::queue<Node*> q;
-    q.push(&formula);
-
-    while (!q.empty()) {
-        Node* node = q.front();
-        q.pop();
-
-        if (node->value.num_symbol != 0) {
-            auto it = std::find_if(data.begin(), data.end(), [node](const Unifier& unifier) {
-                return unifier.equal_into(*node); 
-            });
-            if (it == data.end()) {
-                Node tmp(*node);
-                node->value.num_symbol = 0;
-                data.push_back(Unifier(tmp, *node));
-            }
-            else node->value.num_symbol = 0;
-        }
-
-        if (node->left) q.push(node->left);
-        if (node->right) q.push(node->right);
-    }
-    return data;
-}
-
-std::pair<Node*, Node*> Formula::get_first_mismatched_pair(Node& first_formula, Node& second_formula) {
     std::stack<Node*> first;
-    first.push(&first_formula);
     std::stack<Node*> second;
-    second.push(&second_formula);
-    auto is_end_node = [](Node* node){ return node->value.num_symbol != 0 && !node->left && !node->right; };
+    first.push(&unif_first_formula);
+    second.push(&unif_second_formula);
 
     while (!first.empty() && !second.empty()) {
-        auto node_first = first.top();
+        auto first_node = first.top();
         first.pop();
-        auto node_second = second.top();
+
+        auto second_node = second.top();
         second.pop();
 
-        if (node_first->value != node_second->value)
-            return {node_first, node_second};
+        // std::cout << "Первая формула: " << *first_node << "\tВторая формула: " << *second_node << std::endl;
 
-        if (node_first->left) first.push(node_first->left);
-        if (node_first->right) first.push(node_first->right);
-        if (node_second->left) second.push(node_second->left);
-        if (node_second->right) second.push(node_second->right);
+        if (first_node->value == second_node->value) {
+            if (first_node->right) first.push(first_node->right);
+            if (first_node->left) first.push(first_node->left);
+            if (second_node->right) second.push(second_node->right);
+            if (second_node->left) second.push(second_node->left);
+        }
 
+        else if (first_node->value.num_symbol != 0 || second_node->value.num_symbol != 0) {
+            Node* value_node = first_node->value.num_symbol != 0 ? first_node : second_node;
+            Node* other_node = first_node->value.num_symbol == 0 ? first_node : second_node;
+            Node* value_formula = first_node->value.num_symbol != 0 ? &unif_first_formula : &unif_second_formula;
+            Node* other_formula = first_node->value.num_symbol == 0 ? &unif_first_formula : &unif_second_formula;
+
+            replace_param.to_zerros_num_value(other_node, replace_data, unif_data);
+            replace_param.change_form_to_var(other_formula, unif_data);
+
+            unif_data.push_back(Unifier(*value_node, *other_node));
+            replace_param.change_form_to_var(value_formula, unif_data);
+        }
+
+        else if (first_node->value != '!' && !first_node->left->left && !first_node->left->right) {
+            replace_param.to_zerros_num_value(second_node, replace_data, unif_data);
+            replace_param.change_form_to_var(&unif_second_formula, unif_data);
+
+            unif_data.push_back(Unifier(*first_node->left, Node('!', new Node(*second_node))));
+            replace_param.change_form_to_var(&unif_first_formula, unif_data);
+        }
+
+        else if (second_node->value != '!' && !second_node->left->left && !second_node->left->right) {
+            replace_param.to_zerros_num_value(first_node, replace_data, unif_data);
+            replace_param.change_form_to_var(&unif_first_formula, unif_data);
+
+            unif_data.push_back(Unifier(*second_node->left, Node('!', new Node(*first_node))));
+            replace_param.change_form_to_var(&unif_second_formula, unif_data);
+        }
+
+        else return false;
+
+        // std::cout << "Первая формула: " << *first_node << "\tВторая формула: " << *second_node << std::endl << std::endl;
     }
 
-    return {nullptr, nullptr};
-}
-
-std::vector<Unifier> Formula::unification(Node& first, Node& left) {
-    std::vector<Unifier> data;
-    Node *first_formula, *left_formula;
-    std::tie(first_formula, left_formula) = Formula::get_first_mismatched_pair(first, left);
-
-    while (first_formula && left_formula) {
-        if (!left_formula->left && !left_formula->right) {
-            auto un = Formula::to_zerros_num_value(*first_formula);
-
-            if (un.size() == 0)
-                return {};
-
-            data.insert(data.end(), un.begin(), un.end());
-            Formula::replace_chars(first, un);
-            un = Formula::replace_chars(left, { Unifier(*left_formula, *first_formula) });
-            data.insert(data.end(), un.begin(), un.end());
-        }
-        else if (!first_formula->left && !first_formula->right) {
-            auto un = Formula::to_zerros_num_value(*left_formula);
-
-            if (un.size() == 0)
-                return {};
-
-            data.insert(data.end(), un.begin(), un.end());
-            Formula::replace_chars(left, un);
-            un = Formula::replace_chars(first, { Unifier(*first_formula, *left_formula) });
-            data.insert(data.end(), un.begin(), un.end());
-        }
-        else return {};
-
-        std::tie(first_formula, left_formula) = Formula::get_first_mismatched_pair(first, left);
-    }
-    return data;
+    return first.empty() && second.empty();
 }

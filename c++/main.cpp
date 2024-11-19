@@ -14,7 +14,13 @@ int main() {
     Rule* mp = new ModusPonuns();
     find_formul.set_rules({mp});
 
-    find_formul.find_formul(Formula::to_expression_tree("!a > b"));
+    find_formul.find_formul(Formula::to_expression_tree("a > a"));
 
     find_formul.clear_data();
+
+    // Node axiom1 = Formula::to_expression_tree("a > (b > a)");
+    // Node new_node;
+    // ModusPonuns mp;
+    // mp.is_approp({axiom1, 1}, {axiom1, 2}, new_node);
+    // std::cout << new_node << std::endl;
 }

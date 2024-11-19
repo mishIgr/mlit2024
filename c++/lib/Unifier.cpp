@@ -48,6 +48,8 @@ bool Unifier::equal_into(const Node& into) const { return this->into == into; }
 bool Unifier::equal_what(const Node& what) const { return this->what == what; }
 Node Unifier::get_into() const { return Node(into); }
 Node Unifier::get_what() const { return Node(what); }
+ValueNode Unifier::get_value_into() const { return into.value; }
+ValueNode Unifier::get_value_what() const { return what.value; }
 
 std::ostream& operator<<(std::ostream& out, const Unifier& other) {
     out << '{' << other.what << " | " << other.into << '}';
