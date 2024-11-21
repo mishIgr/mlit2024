@@ -14,11 +14,11 @@ int main() {
     Rule* mp = new ModusPonuns();
     find_formul.set_rules({mp});
 
-    find_formul.find_formul(Formula::to_expression_tree("!a > (a > b)"));
+    find_formul.find_formul(Formula::to_expression_tree("!(a > !b) > b"));
 
     find_formul.clear_data();
 
-    // std::cout << (Formula::to_expression_tree("(!a>(a>a))") == Formula::to_expression_tree("(!a>(a>b))"));
+    // std::cout << (Formula::to_expression_tree("(a > (!b > a))") == Formula::to_expression_tree("(b > (!a > b))"));
 }
 
 /*
@@ -29,5 +29,5 @@ int main() {
 "b > (!a > b)"
 "(a > c) > ((b > c) > ((!a > b) > c))"
 "!a > (a > b)"
-"!a > !a"
+"a > a"
 */

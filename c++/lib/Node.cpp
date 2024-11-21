@@ -12,8 +12,8 @@ ValueNode::ValueNode() : symbol(0), num_symbol(0) {}
 
 bool ValueNode::operator==(char symbol) const { return this->symbol == symbol; }
 bool ValueNode::operator<(char symbol) const { return this->symbol < symbol; }
-bool ValueNode::operator==(const ValueNode& other) const { return this->symbol == other.symbol && this->num_symbol == other.num_symbol; }
-bool ValueNode::operator<(const ValueNode& other) const { return this->symbol < other.symbol; }
+bool ValueNode::operator==(const ValueNode& other) const { return symbol == other.symbol && num_symbol == other.num_symbol; }
+bool ValueNode::operator<(const ValueNode& other) const { return symbol != other.symbol ? symbol < other.symbol : num_symbol < other.num_symbol; }
 
 bool ValueNode::equal(const ValueNode& other) const { return symbol == other.symbol && num_symbol == other.num_symbol; }
 
