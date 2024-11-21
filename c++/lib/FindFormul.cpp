@@ -32,22 +32,33 @@ void FindFormul::find_formul(const Node& formula) {
 
     for (auto axiom : axioms)
         data.push_back(new Node(*axiom));
+    
+    Node tmp_formula(formula);
+    Node* p_tmp_formula = &tmp_formula;
+    while (p_tmp_formula->value == '>') {
+        data.push_back(new Node(*p_tmp_formula->left));
+        p_tmp_formula = p_tmp_formula->right;
+    }
+    // for (auto& f : data)
+    //     std::cout << *f << ", ";
+    // std::cout << std::endl;
 
-    while (!flag_find && data.size() < 1e10) {
-        if (data.size() == size_data) break;
+    while (true) {
         size_data = data.size();
         for (int i = 0; i < size_data; ++i) {
             for (int j = 0; j < size_data; ++j) {
                 for (Rule* rule : rules) {
-                    if (rule->is_approp({*data[i], i + 1}, {*data[j], j + 1}, new_data)) {
+                    if (rule->is_approp({*data[i], i + 1}, {*data[j], i == j ? i + 2 : j + 1}, new_data)) {
                         auto it = std::find_if(data.begin(), data.end(), [new_data](Node* node) {
-                            return *node == new_data; 
+                            return node->equal(new_data); 
                         });
                         if (it != data.end())
                             continue;
                         data.push_back(new Node(new_data));
-                        if (new_data == formula) {
+                        std::cout << *data[i] << ' ' << *data[j] << " |- " << new_data << std::endl;
+                        if (p_tmp_formula->equal(new_data)) {
                             std::cout << "Формула найдена на количестве элементов " << data.size() << '\n';
+                            std::cout << "Найденная формула: " << new_data << "\tИкомая формула: " << *p_tmp_formula << '\n';
                             return ;
                         }
                     }

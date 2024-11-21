@@ -38,6 +38,8 @@ struct Node {
 
     bool operator==(const Node& other) const;
     bool operator<(const Node& other) const;
+
+    bool equal(const Node& other) const;
 };
 
 std::ostream& operator<<(std::ostream& out, const Node& node);

@@ -20,6 +20,8 @@ public:
     bool equal_what(const Node& what) const;
     Node get_into() const;
     Node get_what() const;
+    ValueNode get_value_into() const;
+    ValueNode get_value_what() const;
 
     friend std::ostream& operator<<(std::ostream& out, const Unifier& other);
 };

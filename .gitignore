@@ -1,5 +1,5 @@
 # Виртуальное окружение
-/venv/
-/.vscode/
-/c++/build/
+/venv
+/.vscode
+/c++/build
 /c++/main
