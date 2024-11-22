@@ -14,7 +14,7 @@ int main() {
     Rule* mp = new ModusPonuns();
     find_formul.set_rules({mp});
 
-    find_formul.find_formul(Formula::to_expression_tree("!(a > !b) > b"));
+    find_formul.find_formul(Formula::to_expression_tree("(a>((b>((c>d)>((c>d)*(c>c))))>!a))>!a"));
 
     find_formul.clear_data();
 
