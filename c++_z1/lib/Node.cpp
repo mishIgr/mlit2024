@@ -123,11 +123,7 @@ bool Node::operator==(const Node& other) const {
             stack_this.push(this_node->left);
             stack_other.push(other_node->left);
         } else if (this_node->left || other_node->left)
-            return false; 
-
-        // for (auto& p : replace_data)
-        //     std::cout << '{' << p.first << ' ' << p.second << '}' << ", ";
-        // std::cout << std::endl;
+            return false;
     }
 
     return stack_this.empty() && stack_other.empty();

@@ -18,16 +18,8 @@ bool ModusPonuns::is_approp(const std::pair<const Node&, int>& first_formula, co
         rp.change_form_to_var(&new_formula, unif_data);
         rp.del_repet_denial(&new_formula);
 
-        // for (auto& u : unif_data)
-        //     std::cout << u << ' ';
-        // std::cout << std::endl;
-
         rp = ReplaceParam(ReplaceParam::find_next_value(&new_formula));
         rp.to_zerros_num_value(&new_formula, replace_data, unif_data);
-
-        // for (auto& u : unif_data)
-        //     std::cout << u << ' ';
-        // std::cout << std::endl;
 
         return true;
     } catch (ErrorCreateUnifier) {

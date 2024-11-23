@@ -53,30 +53,6 @@ void FindFormul::print_result(Node* find_node) {
     recover_path(find_node, std::cout, 0);
 }
 
-Node new_axiom(std::vector<Node*> axioms, std::unordered_map<std::string, std::pair<std::string, std::string>> pathMap, Rule* rule) {
-    std::vector<std::pair<int, int>> indexs {
-        {0, 0},
-        {1, 0},
-        {3, 1},
-        {4, 1},
-        {2, 5},
-        {6, 6},
-        {7, 8},
-        {3, 9}
-    };
-    Node tmp;
-    for (auto [i, j] : indexs) {
-        bool f = rule->is_approp({*axioms[i], 1}, {*axioms[j], 2}, tmp);
-        if (!f)
-            std::cout << "OSHIBKA\n";
-        axioms.push_back(new Node(tmp));
-    }
-    for (auto p : axioms)
-        std::cout << *p << std::endl;
-    return tmp;
-}
-
-
 void FindFormul::find_formul(const Node& formula) {
     bool flag_find = false;
     size_t size_data;
@@ -85,20 +61,28 @@ void FindFormul::find_formul(const Node& formula) {
 
     for (auto axiom : axioms)
         data.push_back(new Node(*axiom));
-    
-    // new_axiom(data, pathMap, rules[0]);
-    
+
     Node tmp_formula(formula);
     Node* p_tmp_formula = &tmp_formula;
     while (p_tmp_formula->value == '>') {
-        data.push_back(new Node(*p_tmp_formula->left));
-        deduction_axiom.push_back(new Node(*p_tmp_formula->left));
+        auto it = std::find_if(data.begin(), data.end(), [p_tmp_formula](Node* node) {
+            return *(p_tmp_formula->left) == *node; 
+        });
+        if (it == data.end()) {
+            data.push_back(new Node(*p_tmp_formula->left));
+            deduction_axiom.push_back(new Node(*p_tmp_formula->left));
+        }
         p_tmp_formula = p_tmp_formula->right;
         printDeduction(data, *p_tmp_formula);
     }
-    // for (auto& f : data)
-    //     std::cout << *f << ", ";
-    // std::cout << "AAAAA "<<std::endl;
+
+    auto it = std::find_if(data.begin(), data.end(), [p_tmp_formula](Node* node) {
+        return *(p_tmp_formula) == *node; 
+    });
+    if (it != data.end()) {
+        std::cout << "Найденно по дедукции" << std::endl;
+        return ;
+    }
 
     for (Node* f : data) {
         pathMap[f] = std::make_pair(nullptr, nullptr);
@@ -117,11 +101,12 @@ void FindFormul::find_formul(const Node& formula) {
                         if (it != data.end())
                             continue;
                         data.push_back(temp);
+
+                        std::cout << rule->get_name() << '(' << i << ", " << j << "): ";
+                        std::cout << *data[i] << ' ' << *data[j] << std::endl;
                         
                         pathMap[temp] = std::make_pair(data[i], data[j]);
 
-                        std::cout << "md(" << i << ", " << j << ") ";
-                        std::cout << *data[i] << ' ' << *data[j] << " |- " << new_data << std::endl;
                         if (*p_tmp_formula == new_data) {
                             std::cout << "Формула найдена на количестве элементов " << data.size() << '\n';
                             std::cout << "Найденная формула: " << new_data << "\tИкомая формула: " << *p_tmp_formula << '\n';

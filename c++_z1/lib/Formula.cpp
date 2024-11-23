@@ -127,6 +127,9 @@ std::unordered_map<char, int> precedence = {
 
 // Функция парсит строку и переводит её в Node
 Node Formula::to_expression_tree(const std::string& expression) {
+    if (expression.empty())
+        throw std::logic_error("Ожидается не пустая строка");
+        
     std::stack<Node*> stack;
     std::stack<char> operator_stack;
 
@@ -225,8 +228,6 @@ bool Formula::unification(std::pair<const Node&, int> first_formula, std::pair<c
         auto second_node = second.top();
         second.pop();
 
-        // std::cout << "Первая формула: " << unif_first_formula << "\tВторая формула: " << unif_second_formula << std::endl;
-
         if (first_node->value == second_node->value) {
             if (first_node->right) first.push(first_node->right);
             if (first_node->left) first.push(first_node->left);
@@ -235,7 +236,6 @@ bool Formula::unification(std::pair<const Node&, int> first_formula, std::pair<c
         }
 
         else if (!first_node->value.is_varible_or_const() || !second_node->value.is_varible_or_const()) {
-            // std::cout << "1\n";
             Node* value_node = !first_node->value.is_varible_or_const() ? first_node : second_node;
             Node* other_node = first_node->value.is_varible_or_const() ? first_node : second_node;
             Node* value_formula = !first_node->value.is_varible_or_const() ? &unif_first_formula : &unif_second_formula;
@@ -249,7 +249,6 @@ bool Formula::unification(std::pair<const Node&, int> first_formula, std::pair<c
         }
 
         else if (first_node->value.num_symbol == VARIBLE_VALUE && second_node->value.num_symbol == CONST_VALUE) {
-            // std::cout << "2\n";
             if (first_node->left || first_node->right)
                 return false;
 
@@ -258,7 +257,6 @@ bool Formula::unification(std::pair<const Node&, int> first_formula, std::pair<c
         }
 
         else if (first_node->value.num_symbol == CONST_VALUE && second_node->value.num_symbol == VARIBLE_VALUE) {
-            // std::cout << "3\n";
             if (second_node->left || second_node->right)
                 return false;
 
@@ -267,7 +265,6 @@ bool Formula::unification(std::pair<const Node&, int> first_formula, std::pair<c
         }
 
         else if (first_node->value == '!' && !first_node->left->left && !first_node->left->right) {
-            // std::cout << "4\n";
             replace_param.to_zerros_num_value(second_node, replace_data, unif_data);
             replace_param.change_form_to_var(&unif_second_formula, unif_data);
 
@@ -276,7 +273,6 @@ bool Formula::unification(std::pair<const Node&, int> first_formula, std::pair<c
         }
 
         else if (second_node->value == '!' && !second_node->left->left && !second_node->left->right) {
-            // std::cout << "5\n";
             replace_param.to_zerros_num_value(first_node, replace_data, unif_data);
             replace_param.change_form_to_var(&unif_first_formula, unif_data);
 
@@ -285,8 +281,6 @@ bool Formula::unification(std::pair<const Node&, int> first_formula, std::pair<c
         }
 
         else return false;
-
-        // std::cout << "Первая формула: " << unif_first_formula << "\tВторая формула: " << unif_second_formula << std::endl << std::endl;
     }
 
     return first.empty() && second.empty();
