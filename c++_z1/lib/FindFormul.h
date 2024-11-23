@@ -19,9 +19,9 @@ public:
     void set_axioms(const std::vector<Node*>& axioms);
     void clear_data();
     
-    std::string getStringFormat(const Node& node);
-    void recoverPath(const std::string& find_node, std::ostream& out, int depth);
-    void printResult(const Node& find_node);
+    std::string get_string_format(const Node& node);
+    void recover_path(const std::string& find_node, std::ostream& out, int depth);
+    void print_result(const Node& find_node);
 
     void find_formul(const Node& formula);
 };

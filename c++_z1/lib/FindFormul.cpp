@@ -25,7 +25,6 @@ void FindFormul::clear_data() {
         delete ptr;
 }
 
-
 template <typename T>
 void printDeduction(const T& data, const Node& right_value) {
     std::cout << "Дедукция: ";
@@ -34,36 +33,56 @@ void printDeduction(const T& data, const Node& right_value) {
     std::cout << " |- " << right_value << std::endl;
 }
 
-std::string FindFormul::getStringFormat(const Node& node) {
+std::string FindFormul::get_string_format(const Node& node) {
     std::string data;
     if (node.right)
-        data += '(' + getStringFormat(*node.left) + ' ' + node.value.symbol  + ' ' + getStringFormat(*node.right) + ')';
+        data += '(' + get_string_format(*node.left) + ' ' + node.value.symbol  + ' ' + get_string_format(*node.right) + ')';
     else if (node.left)
-        data += node.value.symbol + getStringFormat(*node.left);
+        data += node.value.symbol + get_string_format(*node.left);
     else 
         data += node.value.symbol;
     return data;
 }
 
-void FindFormul::recoverPath(const std::string& find_node, std::ostream& out, int depth = 0) {
+void FindFormul::recover_path(const std::string& find_node, std::ostream& out, int depth = 0) {
     auto [left, right] = pathMap[find_node];
     out << '|' << std::string(depth * 2, '-') << find_node << '\n';
     if (left != "")
-        recoverPath(left, out, depth + 1);
+        recover_path(left, out, depth + 1);
     if (right != "")
-        recoverPath(right, out, depth + 1);
+        recover_path(right, out, depth + 1);
 }
 
-void FindFormul::printResult(const Node& find_node) {
+void FindFormul::print_result(const Node& find_node) {
     for (auto axiom : axioms)
         std::cout << "Axiom: " << *axiom << '\n';
     for (auto axiom : deduction_axiom)
         std::cout << "Deduction axiom: " << *axiom << '\n';
-    recoverPath(getStringFormat(find_node), std::cout, 0);
+    recover_path(get_string_format(find_node), std::cout, 0);
 }
-    
 
-
+Node new_axiom(std::vector<Node*> axioms, std::unordered_map<std::string, std::pair<std::string, std::string>> pathMap, Rule* rule) {
+    std::vector<std::pair<int, int>> indexs {
+        {0, 0},
+        {1, 0},
+        {3, 1},
+        {4, 1},
+        {2, 5},
+        {6, 6},
+        {7, 8},
+        {3, 9}
+    };
+    Node tmp;
+    for (auto [i, j] : indexs) {
+        bool f = rule->is_approp({*axioms[i], 1}, {*axioms[j], 2}, tmp);
+        if (!f)
+            std::cout << "OSHIBKA\n";
+        axioms.push_back(new Node(tmp));
+    }
+    for (auto p : axioms)
+        std::cout << *p << std::endl;
+    return tmp;
+}
 
 void FindFormul::find_formul(const Node& formula) {
     bool flag_find = false;
@@ -74,6 +93,8 @@ void FindFormul::find_formul(const Node& formula) {
 
     for (auto axiom : axioms)
         data.push_back(new Node(*axiom));
+    
+    // new_axiom(data, pathMap, rules[0]);
     
     Node tmp_formula(formula);
     Node* p_tmp_formula = &tmp_formula;
@@ -88,7 +109,7 @@ void FindFormul::find_formul(const Node& formula) {
     // std::cout << "AAAAA "<<std::endl;
 
     for (auto& f : data) {
-        pathMap[getStringFormat(*f)] = std::make_pair("", "");
+        pathMap[get_string_format(*f)] = std::make_pair("", "");
     }
 
     while (true) {
@@ -97,7 +118,6 @@ void FindFormul::find_formul(const Node& formula) {
             for (int j = 0; j < size_data; ++j) {
                 for (Rule* rule : rules) {
                     if (rule->is_approp({*data[i], i + 1}, {*data[j], i == j ? i + 2 : j + 1}, new_data)) {
-
                         auto it = std::find_if(data.begin(), data.end(), [new_data](Node* node) {
                             return node->equal(new_data); 
                         });
@@ -106,20 +126,19 @@ void FindFormul::find_formul(const Node& formula) {
                             continue;
                         data.push_back(new Node(new_data));
 
-                        pathMap[getStringFormat(new_data)] = std::make_pair(getStringFormat(*data[i]), getStringFormat(*data[j]));
+                        pathMap[get_string_format(new_data)] = std::make_pair(get_string_format(*data[i]), get_string_format(*data[j]));
 
                         std::cout << "md(" << i << ", " << j << ") ";
                         std::cout << *data[i] << ' ' << *data[j] << " |- " << new_data << std::endl;
-                        if (p_tmp_formula->equal(new_data)) {
+                        if (*p_tmp_formula == new_data) {
                             std::cout << "Формула найдена на количестве элементов " << data.size() << '\n';
                             std::cout << "Найденная формула: " << new_data << "\tИкомая формула: " << *p_tmp_formula << '\n';
-                            printResult(*p_tmp_formula);
+                            print_result(*p_tmp_formula);
                             return ;
                         }
                     }
                 }
             }
         }
-        std::cout << "Размер данных " << data.size() << '\n';
     }
 }

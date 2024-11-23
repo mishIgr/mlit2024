@@ -4,38 +4,22 @@
 #include <algorithm>
 #include <iostream>
 
-const char* ErrorCreateUnifier::what() const noexcept {
-    return "Невозможно в формулу подставить себя";
-}
+const char* ErrorCreateUnifier::what() const noexcept { return "Ошибка создания унификатора"; }
 
 Unifier::Unifier() {}
 Unifier::Unifier(const Node& into, const Node& what) : into(into), what(what) {
-    std::vector<ValueNode> data;
+    if (into.left || into.right || into.value.num_symbol == CONST_VALUE)
+        throw ErrorCreateUnifier();
+
     std::queue<Node*> q;
-    q.push(&this->into);
-
-    while (!q.empty()) {
-        Node* node = q.front();
-        q.pop();
-
-        if (node->value.num_symbol == 0 && !node->left && !node->right)
-            data.push_back(node->value);
-
-        if (node->left) q.push(node->left);
-        if (node->right) q.push(node->right);
-    }
-
     q.push(&this->what);
 
     while (!q.empty()) {
         Node* node = q.front();
         q.pop();
 
-        if (node->value.num_symbol == 0 && !node->left && !node->right) {
-            auto it = std::find_if(data.begin(), data.end(), [node](ValueNode value_node) {
-                return node->value == value_node;
-            });
-            if (it != data.end())
+        if (node->value.num_symbol == VARIBLE_VALUE && !node->left && !node->right) {
+            if (node->value == into.value)
                 throw ErrorCreateUnifier();
         }
 
