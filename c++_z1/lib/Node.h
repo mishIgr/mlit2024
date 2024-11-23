@@ -4,6 +4,9 @@
 #include <string>
 #include <stack>
 
+#define CONST_VALUE -1
+#define VARIBLE_VALUE 0
+
 struct ValueNode {
     char symbol;
     int num_symbol;
@@ -17,7 +20,7 @@ struct ValueNode {
     bool operator==(const ValueNode& other) const;
     bool operator<(const ValueNode& other) const;
 
-    bool equal(const ValueNode& other) const;
+    bool is_varible_or_const() const;
 };
 
 std::ostream& operator<<(std::ostream& out, const ValueNode& node);
@@ -38,6 +41,9 @@ struct Node {
 
     bool operator==(const Node& other) const;
     bool operator<(const Node& other) const;
+
+    void set_all_const();
+    void set_all_varible();
 
     bool equal(const Node& other) const;
 };

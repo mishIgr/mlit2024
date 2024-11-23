@@ -5,21 +5,23 @@
 #include <map>
 
 #define FIRST_VALUE 'a'
+#define COLOR_BLUE "\033[96m"
+#define COLOR_STANDART "\033[39m"
 
 ValueNode::ValueNode(char symbol, int num_symbol) : symbol(symbol), num_symbol(num_symbol) {}
-ValueNode::ValueNode(char symbol) : symbol(symbol), num_symbol(0) {}
-ValueNode::ValueNode() : symbol(0), num_symbol(0) {}
+ValueNode::ValueNode(char symbol) : symbol(symbol), num_symbol(VARIBLE_VALUE) {}
+ValueNode::ValueNode() : symbol(0), num_symbol(VARIBLE_VALUE) {}
 
 bool ValueNode::operator==(char symbol) const { return this->symbol == symbol; }
 bool ValueNode::operator<(char symbol) const { return this->symbol < symbol; }
 bool ValueNode::operator==(const ValueNode& other) const { return symbol == other.symbol && num_symbol == other.num_symbol; }
 bool ValueNode::operator<(const ValueNode& other) const { return symbol != other.symbol ? symbol < other.symbol : num_symbol < other.num_symbol; }
 
-bool ValueNode::equal(const ValueNode& other) const { return symbol == other.symbol && num_symbol == other.num_symbol; }
+bool ValueNode::is_varible_or_const() const { return num_symbol == CONST_VALUE || num_symbol == VARIBLE_VALUE; }
 
 std::ostream& operator<<(std::ostream& out, const ValueNode& node) {
     out << node.symbol;
-    if (node.num_symbol)
+    if (node.num_symbol != VARIBLE_VALUE && node.num_symbol != CONST_VALUE)
         out << node.num_symbol;
     return out;
 }
@@ -35,7 +37,7 @@ Node::Node(const Node& other, int num_symbol) : value(other.value), left(nullptr
         left = new Node(*other.left, num_symbol);
     if (other.right)
         right = new Node(*other.right, num_symbol);
-    if (other.left == nullptr && other.right == nullptr && value.num_symbol == 0)
+    if (other.left == nullptr && other.right == nullptr && value.num_symbol == VARIBLE_VALUE)
         value.num_symbol = num_symbol;
 }
 
@@ -71,6 +73,9 @@ Node::~Node() {
 }
 
 bool is_equal(std::map<ValueNode, ValueNode>& data, const ValueNode& key1, const ValueNode& key2, char& next_value) {
+    if (key1.num_symbol == CONST_VALUE && key2.num_symbol == CONST_VALUE && key1 != key2)
+        return false;
+
     auto it1 = data.find(key1);
     auto it2 = data.find(key2);
 
@@ -118,11 +123,7 @@ bool Node::operator==(const Node& other) const {
             stack_this.push(this_node->left);
             stack_other.push(other_node->left);
         } else if (this_node->left || other_node->left)
-            return false; 
-
-        // for (auto& p : replace_data)
-        //     std::cout << '{' << p.first << ' ' << p.second << '}' << ", ";
-        // std::cout << std::endl;
+            return false;
     }
 
     return stack_this.empty() && stack_other.empty();
@@ -136,14 +137,20 @@ bool Node::operator<(const Node& other) const {
     return value < other.value;
 }
 
-std::ostream& operator<<(std::ostream& out, const Node& node) {
-    if (node.right)
-        out << '(' << *node.left << ' ' << node.value << ' ' << *node.right << ')';
-    else if (node.left)
-        out << node.value << *node.left;
-    else
-        out << node.value;
-    return out;
+void Node::set_all_const() {
+    if (this->left) this->left->set_all_const();
+    if (this->right) this->right->set_all_const();
+
+    if (!this->left && !this->right)
+        value.num_symbol = CONST_VALUE;
+}
+
+void Node::set_all_varible() {
+    if (this->left) this->left->set_all_varible();
+    if (this->right) this->right->set_all_varible();
+
+    if (!this->left && !this->right)
+        value.num_symbol = VARIBLE_VALUE;
 }
 
 bool Node::equal(const Node& other) const {
@@ -176,4 +183,14 @@ bool Node::equal(const Node& other) const {
     }
 
     return stack_this.empty() && stack_other.empty();
+}
+
+std::ostream& operator<<(std::ostream& out, const Node& node) {
+    if (node.right)
+        out << '(' << *node.left << ' ' << node.value << ' ' << *node.right << ')';
+    else if (node.left)
+        out << node.value << *node.left;
+    else
+        out << ((node.value.num_symbol == CONST_VALUE) ? COLOR_BLUE : COLOR_STANDART) << node.value << COLOR_STANDART;
+    return out;
 }
