@@ -19,10 +19,10 @@ int main() {
     "!(a > !b) > a"                          new_axiom1   4
     "!(a > !b) > b"                          new_axiom1   5
     "a > (b > (a > !b))"                     ...          6
-    "a > (!a > b)"                           new_axiom1   7
+    "a > (!a > b)"                           solo         7
     "b > (!a > b)"                           solo         8
     "(a > c) > ((b > c) > ((!a > b) > c))"   ...          9
-    "!a > (a > b)"                           new_axiom1  10
+    "!a > (a > b)"                           solo        10
     "a > a"                                  solo        11
     */
 
@@ -35,9 +35,9 @@ int main() {
     Node axiom10 = Formula::to_expression_tree("!a > (a > b)");
     Node axiom11 = Formula::to_expression_tree("a > a");
 
-    find_formul.set_axioms({ &axiom1, &axiom2, &axiom3, &new_axiom1});
+    find_formul.set_axioms({ &axiom1, &axiom2, &axiom3});
 
-    Node formula = axiom11;
+    Node formula = axiom4;
     formula.set_all_const();
     find_formul.find_formul(formula);
 
