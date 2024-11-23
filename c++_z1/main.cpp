@@ -15,7 +15,7 @@ int main() {
     ModusPonuns mp;
     find_formul.set_rules({&mp});
 
-    Node formula = Formula::to_expression_tree("(!a > !b) > (b > a)");
+    Node formula = Formula::to_expression_tree("!(a > !b) > a");
     /*
     "!(a > !b) > a"
     "!(a > !b) > b"
